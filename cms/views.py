@@ -31,6 +31,21 @@ def product_details(request, category_slug, subcategory_slug, product_slug):
     return render(request, 'product_details.html', context)
 
 
+def search(request):
+    if 'keyword' in request.GET:
+        keyword = request.GET['keyword']
+        if keyword:
+            products = Product.objects.filter(Q(description__icontains=keyword) | Q(product_name__icontains=keyword))
+        else:
+            return redirect('home')
+
+    
+    context = {
+        'products': products
+    }
+    return render(request, 'home.html', context)
+
+
 
 def register(request):
     if request.method == 'POST':
