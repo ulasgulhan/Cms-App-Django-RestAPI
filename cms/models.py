@@ -1,6 +1,7 @@
 from django.db import models
 from django.urls import reverse
 
+
 # Create your models here.
 
 STATUS_CHOICES = [
@@ -27,8 +28,8 @@ class Category(models.Model):
 
 
 class SubCategory(models.Model):
-    subcategory_name    = models.CharField(max_length=100, unique=True)
-    slug                = models.SlugField(max_length=100, unique=True)
+    subcategory_name    = models.CharField(max_length=100)
+    slug                = models.SlugField(max_length=100)
     description         = models.TextField(max_length=255)
     status              = models.CharField(max_length=100, choices=STATUS_CHOICES, default='Active')
     parent_category     = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='subcategories')
@@ -41,15 +42,15 @@ class SubCategory(models.Model):
         return reverse('products_by_subcategory', args=[self.parent_category.slug, self.slug])
     
     def __str__(self):
-        return self.subcategory_name
+        return self.parent_category.category_name + ' >' + self.subcategory_name 
 
 
 class Product(models.Model):
-    product_name    = models.CharField(max_length=100)
+    product_name    = models.CharField(max_length=100, unique=True)
     slug            = models.SlugField(max_length=100, unique=True)
     description     = models.TextField(max_length=1000)
     price           = models.IntegerField()
-    image           = models.ImageField(upload_to='photos/product', blank=True)
+    image           = models.ImageField(upload_to='photos/product')
     stock           = models.IntegerField()
     status          = models.CharField(max_length=100, choices=STATUS_CHOICES, default='Active')
     category        = models.ForeignKey(SubCategory, on_delete=models.CASCADE, related_name='subcategory')

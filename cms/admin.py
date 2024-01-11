@@ -1,4 +1,7 @@
 from django.contrib import admin
+
+
+
 from .models import Category, SubCategory, Product, Pages
 
 # Register your models here.
@@ -15,8 +18,9 @@ class SubCategoryAdmin(admin.ModelAdmin):
 
 
 class ProductAdmin(admin.ModelAdmin):
-    prepopulated_fields = {'slug':('product_name',)}
-    list_display        = ('product_name', 'category', 'status', 'stock', 'price', 'created_date')
+    prepopulated_fields = {'slug': ('product_name',)}
+    list_display = ('product_name', 'category', 'status', 'stock', 'price', 'created_date')
+
 
 
 class PageAdmin(admin.ModelAdmin):

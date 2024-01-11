@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<!-- ========================= SECTION MAIN ========================= -->
+
+<!-- ========================= SECTION MAIN END// ========================= -->
+
+<!-- ========================= SECTION  ========================= -->
+<section class="section-name padding-y-sm">
+<div class="container">
+
+<header class="section-heading">
+	{% if 'search' in request.path %}
+		{% if product_count <= 0 %}
+			<h4 style="color: red">{{ product_count }} Product Found</h4>
+		{% else %}
+			<h4 style="color: green">{{ product_count }} Product Found</h4>
+		{% endif %}
+		<h2 class="title-page"> Search Results Related to "{{ keyword }}"</h2>
+    {% elif category %}	
+		<h4 style="color: green">{{ product_count }} Product Found</h4>
+		<h3 class="section-title">{{ category.category_name }}</h3>
+	{% elif subcategory %}
+		<h4 style="color: green">{{ product_count }} Product Found</h4>
+		<h3 class="section-title"><a href="{{subcategory.parent_category.get_url}}">{{ subcategory.parent_category.category_name }}</a> > {{ subcategory.subcategory_name }}</h3>
+	{% else %}
+		<h4 style="color: green">{{ product_count }} Product Found</h4>
+		<h2 class="title-page">Our Store</h2>
+	{% endif %}
+</header><!-- sect-heading -->
+
+	
+<div class="row">
+	{% if product_count <= 0 %}
+		<div class="col-md-12 d-flex align-items-center justify-content-center" style="height: 50vh; color: red;">
+			<h2>No result found. Please try again.</h2>
+		</div>
+	{% else %}
+		{% for product in products %}
+			<div class="col-md-3">
+				<div class="card card-product-grid">
+					<a href="{{ product.get_url }}" class="img-wrap"> <img src="{{ product.image.url }}"> </a>
+					<figcaption class="info-wrap">
+						<a href="{{ product.get_url }}" class="title">{{ product.product_name }}</a>
+						<div class="price mt-1">$ {{ product.price }}</div> <!-- price-wrap.// -->
+					</figcaption>
+				</div>
+			</div> <!-- col.// -->
+		{% endfor %}
+	{% endif %}
+</div> <!-- row.// -->
+
+</div><!-- container // -->
+</section>
+<!-- ========================= SECTION  END// ========================= -->
+
+
+{% endblock %}

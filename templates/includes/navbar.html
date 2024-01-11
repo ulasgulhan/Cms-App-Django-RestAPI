@@ -34,13 +34,23 @@
                     <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="keyword">
                     <button class="btn btn-outline-success me-2" type="submit">Search</button>
                 </form>
+                <ul class="navbar-nav me-3">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <div class="position-relative">
+                                <div class="icon icon-sm rounded-circle border"><i class="fa fa-shopping-cart"></i></div>
+                                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">5</span>
+                            </div>
+                        </a>
+                    </li>
+                </ul>
 
                 <!-- Login ve Register Kısımları -->
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <span class="navbar-text me-3">Welcome {{user.username}}</span>
                         <li class="nav-item">
-                            <button class="btn btn-danger" type="button"><a class="nav-link" href="{% url 'logout' %}">Logout</a></button>
+                            <button class="btn btn-warning" type="button"><a class="nav-link" href="{% url 'logout' %}">Logout</a></button>
                         </li>
                     {% else %}
                         <li class="nav-item me-3">
