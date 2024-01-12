@@ -1,11 +1,11 @@
 from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from .models import Cart, CartItem, Category, Product, SubCategory, Variations
 from .forms import RegisterForm
 
 # Create your views here.
-
 
 def store(request, category_slug=None, subcategory_slug=None):
     if subcategory_slug != None:
@@ -67,23 +67,28 @@ def register(request):
     }
     return render(request, 'registration/register.html', context)
 
+
+@login_required(login_url='login')
 def add_cart(request, product_id):
     product = Product.objects.get(id=product_id)
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-
-    if not created:
-        cart_item.quantity += 1
-        cart_item.save()
+    if request.user.is_authenticated:
+        cart, created = Cart.objects.get_or_create(user=request.user)
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+        if not created:
+            cart_item.quantity += 1
+            cart_item.save()
     
-    variation_ids = request.POST.getlist('variations', [])
-    variations = Variations.objects.filter(id__in=variation_ids)
-    cart_item.variation.set(variations)
-
+        variation_ids = request.POST.getlist('variations', [])
+        variations = Variations.objects.filter(id__in=variation_ids)
+        cart_item.variation.set(variations)
   
-    cart.save()
+        cart.save()
+        return redirect('cart')
+    else:
+        pass
 
-    return redirect('cart')
+    
+
 
 
 def cart(request, total=0, quantity=0, cart_item=None):
@@ -92,14 +97,14 @@ def cart(request, total=0, quantity=0, cart_item=None):
     grand_total = 0
     if request.user.is_authenticated:
         cart_items = CartItem.objects.all().filter(cart__user=request.user)
+        for cart_item in cart_items:
+            total += (cart_item.product.price * cart_item.quantity)
+            quantity += cart_item.quantity
+            tax = (2 * total)/100
+            grand_total = total + tax
     else:
         pass
-    for cart_item in cart_items:
-        total += (cart_item.product.price * cart_item.quantity)
-        quantity += cart_item.quantity
-    tax = (2 * total)/100
-    grand_total = total + tax
-
+    
     context = {
         'total': total,
         'quantity': quantity,
