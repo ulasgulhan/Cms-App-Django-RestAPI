@@ -1,3 +1,5 @@
+from telnetlib import STATUS
+from django.contrib.auth.models import User
 from django.db import models
 from django.urls import reverse
 
@@ -78,5 +80,57 @@ class Pages(models.Model):
 
     def __str__(self):
         return self.page_name
+
+
+class VariationManager(models.Manager):
+    def colors(self):
+        return super(VariationManager, self).filter(variation_category='color', status='Active')
+    
+    def sizes(self):
+        return super(VariationManager, self).filter(variation_category='size', status='Active')
+
+
+variation_choies = (
+    ('color', 'color'),
+    ('size', 'size')
+)
+
+
+class Variations(models.Model):
+    product_name        = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variation_category  = models.CharField(max_length=100, choices=variation_choies)
+    variation_value     = models.CharField(max_length=100)
+    status              = models.CharField(max_length=100, choices=STATUS_CHOICES, default='Active')
+
+    objects             = VariationManager()
+
+    class Meta:
+        verbose_name = 'variation'
+        verbose_name_plural = 'variations'
+
+    def __str__(self):
+        return self.variation_value
+
+
+class Cart(models.Model):
+    user                = models.OneToOneField(User, on_delete=models.CASCADE)
+    products            = models.ManyToManyField(Product, through='CartItem')
+
+    def __str__(self):
+        return f'Cart for {self.user}'
+
+
+class CartItem(models.Model):
+    product             = models.ForeignKey(Product, on_delete=models.CASCADE)
+    cart                = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    quantity            = models.PositiveIntegerField(default=1)
+    variation           = models.ManyToManyField(Variations, blank=True)
+    status              = models.CharField(max_length=100, choices=STATUS_CHOICES, default='Active')
+
+    def sub_total(self):
+        return self.product.price * self.quantity
+    
+    def __str__(self):
+        return self.product.product_name
 
     

@@ -36,10 +36,10 @@
                 </form>
                 <ul class="navbar-nav me-3">
                     <li class="nav-item">
-                        <a class="nav-link" href="#">
+                        <a class="nav-link" href="{% url 'cart' %}">
                             <div class="position-relative">
                                 <div class="icon icon-sm rounded-circle border"><i class="fa fa-shopping-cart"></i></div>
-                                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">5</span>
+                                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle">{{ cart_count }}</span>
                             </div>
                         </a>
                     </li>
