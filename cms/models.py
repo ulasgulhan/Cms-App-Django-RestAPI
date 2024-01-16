@@ -1,3 +1,4 @@
+from email.policy import default
 from telnetlib import STATUS
 from django.contrib.auth.models import User
 from django.db import models
@@ -49,6 +50,7 @@ class SubCategory(models.Model):
 
 class Product(models.Model):
     product_name    = models.CharField(max_length=100, unique=True)
+    supplier        = models.ForeignKey(User, on_delete=models.CASCADE, default=6)
     slug            = models.SlugField(max_length=100, unique=True)
     description     = models.TextField(max_length=1000)
     price           = models.IntegerField()

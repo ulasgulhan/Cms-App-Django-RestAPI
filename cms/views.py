@@ -1,9 +1,14 @@
+from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template import context
 from .models import Cart, CartItem, Category, Product, SubCategory, Variations
-from .forms import RegisterForm
+from .forms import ProductCreateForm, RegisterForm
+from django.utils import timezone
+from django.utils.text import slugify
+from unidecode import unidecode
 
 # Create your views here.
 
@@ -67,64 +72,64 @@ def register(request):
     }
     return render(request, 'registration/register.html', context)
 
+@login_required
+def dashboard(request):
+    products = Product.objects.select_related('category').filter(supplier=request.user).order_by('-created_date')
+    product_count = products.count()
+    context = {
+        'products': products,
+        'product_count': product_count,
+    }
+    return render(request, 'dashboard/dashboard.html', context)
 
-@login_required(login_url='login')
-def add_cart(request, product_id):
-    product = Product.objects.get(id=product_id)
-    if request.user.is_authenticated:
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
-        if not created:
-            cart_item.quantity += 1
-            cart_item.save()
-    
-        variation_ids = request.POST.getlist('variations', [])
-        variations = Variations.objects.filter(id__in=variation_ids)
-        cart_item.variation.set(variations)
-  
-        cart.save()
-        return redirect('cart')
+
+@login_required
+def create(request):
+    if request.method == 'POST':
+        form = ProductCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            product = form.save(commit=False)
+            product.supplier = request.user
+            product_name = form.cleaned_data['product_name']
+            slug_candidate = unidecode(product_name)
+            product.slug = slugify(slug_candidate.replace(' ', '-').lower())
+            product.created_date = timezone.now()
+            product.save()
+            return redirect('dashboard')
     else:
-        pass
-
-    
-
-
-
-def cart(request, total=0, quantity=0, cart_item=None):
-    cart_items = CartItem.objects.none()
-    tax = 0
-    grand_total = 0
-    if request.user.is_authenticated:
-        cart_items = CartItem.objects.all().filter(cart__user=request.user)
-        for cart_item in cart_items:
-            total += (cart_item.product.price * cart_item.quantity)
-            quantity += cart_item.quantity
-            tax = (2 * total)/100
-            grand_total = total + tax
-    else:
-        pass
+        form = ProductCreateForm()
     
     context = {
-        'total': total,
-        'quantity': quantity,
-        'cart_items': cart_items,
-        'tax': tax,
-        'grand_total': grand_total,
+        'form': form
     }
-
-    return render(request, 'cart.html', context)
-
-
-def remove_cart(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    cart = Cart.objects.get(user=request.user)
-    cart_item = CartItem.objects.get(product=product, cart=cart)
-    if cart_item.quantity > 1:
-        cart_item.quantity -= 1
-        cart_item.save()
-    else:
-        cart_item.delete()
     
-    return redirect('cart')
+    return render(request, 'dashboard/create.html', context)
 
+
+@login_required
+def delete(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if product.supplier == request.user:
+        product.delete()
+    else:
+        messages.error(request, 'You are not allowed to delete this product.')
+    return redirect('dashboard')
+
+
+@login_required
+def update(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    if request.method == 'POST':
+        if product.supplier == request.user:
+            form = ProductCreateForm(request.POST, request.FILES, instance=product)
+            if form.is_valid():
+                form.save()
+                return redirect('dashboard')
+    else:
+        form = ProductCreateForm(instance=product)
+    
+    context = {
+        'form': form
+    }
+    
+    return render(request, 'dashboard/update.html', context)

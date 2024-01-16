@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+<!-- ========================= SECTION MAIN ========================= -->
+
+<!-- ========================= SECTION MAIN END// ========================= -->
+
+<!-- ========================= SECTION  ========================= -->
+<section class="section-name padding-y-sm">
+<div class="container">
+
+	
+<div class="row mt-2">
+    <div class="col-sm-12">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Your Products - You have <strong>{{ product_count }}</strong> numbers of product</div>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-striped">
+              <thead>
+                <tr>
+                  <th>Photo</th>
+                  <th>Name</th>
+                  <th>Detail</th>
+                  <th>Update</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for product in products %}
+                <tr>
+                  <td style="width:10%; height:10%;"><img src="{{ product.image.url }}" class="img-fluid"></td>
+                  <td>{{ product.product_name }}</td>
+                  <td>
+                    <a href="{{ product.get_url }}" class="btn btn-md btn-info">Detail</a>
+                  </td>
+                  <td>
+                    <a href="{% url 'update' product.id %}" class="btn btn-md btn-warning">Update</a>
+                  </td>
+                  <td>
+                    <a href="{% url 'delete' product.id %}" class="btn btn-md btn-danger">Delete</a>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card-footer">
+          <a href="{% url 'create' %}" class="btn btn-md btn-success float-end me-2 ms-2">Create New One</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- container // -->
+</section>
+<!-- ========================= SECTION  END// ========================= -->
+
+
+{% endblock %}

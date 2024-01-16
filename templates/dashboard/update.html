@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% block content %}
+
+<!-- ========================= SECTION MAIN ========================= -->
+
+<!-- ========================= SECTION MAIN END// ========================= -->
+
+<!-- ========================= SECTION  ========================= -->
+<section class="section-name padding-y-sm">
+<div class="container">
+
+	
+    <div class="row mt-2">
+        <div class="col-sm-12">
+          <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Create New Product</h4>
+            </div>
+              <form method="POST"  enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="card-body">
+                  {{form|crispy}}
+                </div>
+                <div class="card-footer">
+                  <a href="{% url 'dashboard' %}" class="btn btn-sm btn-primary float-end">Back to Dashboard</a>
+                  <button type="submit" class="btn btn-sm btn-success float-end me-2 ms-2">Update</button>
+                </div>
+              </form>
+          </div>
+        </div>
+      </div>
+
+</div><!-- container // -->
+</section>
+<!-- ========================= SECTION  END// ========================= -->
+
+
+{% endblock %}
