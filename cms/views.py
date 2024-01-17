@@ -1,34 +1,45 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
-from django.template import context
-from .models import Cart, CartItem, Category, Product, SubCategory, Variations
+from .models import Category, Product, SubCategory
 from .forms import ProductCreateForm, RegisterForm
 from django.utils import timezone
 from django.utils.text import slugify
 from unidecode import unidecode
+from django.core.paginator import Paginator
+
 
 # Create your views here.
+
 
 def store(request, category_slug=None, subcategory_slug=None):
     if subcategory_slug != None:
         subcategory = get_object_or_404(SubCategory, slug=subcategory_slug)
         products = Product.objects.filter(Q(category=subcategory), Q(status='Active') | Q(status='Modified')).order_by('-created_date')
+        paginator = Paginator(products, 3)
+        page = request.GET.get('page')
+        paged_products = paginator.get_page(page)
         product_count = products.count()
-        return render(request, 'store.html', {'products': products, 'product_count': product_count, 'subcategory': subcategory})
+        return render(request, 'store.html', {'products': paged_products, 'product_count': product_count, 'subcategory': subcategory})
     elif category_slug != None:
         category = get_object_or_404(Category, slug=category_slug)
         subcategories = category.subcategories.all()
         products = Product.objects.filter(Q(category__in=subcategories), Q(status='Active') | Q(status='Modified')).order_by('-created_date')
+        paginator = Paginator(products, 3)
+        page = request.GET.get('page')
+        paged_products = paginator.get_page(page)
         product_count = products.count()
-        return render(request, 'store.html', {'products': products, 'product_count': product_count, 'category': category})
+        return render(request, 'store.html', {'products': paged_products, 'product_count': product_count, 'category': category})
     else:
-        products = Product.objects.all().filter(Q(status='Active') | Q(status='Modified')).order_by('-created_date')
+        products = Product.objects.filter(Q(status='Active') | Q(status='Modified')).order_by('created_date')
+        paginator = Paginator(products, 3)
+        page = request.GET.get('page')
+        paged_products = paginator.get_page(page)
         product_count = products.count()
-        return render(request, 'store.html', {'products': products, 'product_count': product_count})
-
+        return render(request, 'store.html', {'products': paged_products, 'product_count': product_count})
 
 
 def product_details(request, category_slug, subcategory_slug, product_slug):
@@ -56,7 +67,6 @@ def search(request):
     return render(request, 'store.html', context)
 
 
-
 def register(request):
     if request.method == 'POST':
         form = RegisterForm(request.POST)
@@ -72,9 +82,10 @@ def register(request):
     }
     return render(request, 'registration/register.html', context)
 
+
 @login_required
 def dashboard(request):
-    products = Product.objects.select_related('category').filter(supplier=request.user).order_by('-created_date')
+    products = Product.objects.select_related('category').filter(Q(supplier=request.user), Q(status='Active') | Q(status='Modified')).order_by('-created_date')
     product_count = products.count()
     context = {
         'products': products,
@@ -110,7 +121,8 @@ def create(request):
 def delete(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     if product.supplier == request.user:
-        product.delete()
+        product.status = 'Passive'
+        product.save()
     else:
         messages.error(request, 'You are not allowed to delete this product.')
     return redirect('dashboard')
@@ -123,6 +135,7 @@ def update(request, product_id):
         if product.supplier == request.user:
             form = ProductCreateForm(request.POST, request.FILES, instance=product)
             if form.is_valid():
+                product.status = 'Modified'
                 form.save()
                 return redirect('dashboard')
     else:
@@ -133,3 +146,19 @@ def update(request, product_id):
     }
     
     return render(request, 'dashboard/update.html', context)
+
+
+def supplier_store(request, user_id):
+    supplier = get_object_or_404(User, id=user_id)
+    products = Product.objects.filter(Q(supplier=supplier), Q(status='Active') | Q(status='Modified')).order_by('-created_date')
+    paginator = Paginator(products, 3)
+    page = request.GET.get('page')
+    paged_products = paginator.get_page(page)
+    product_count = products.count()
+    context = {
+        'products': paged_products,
+        'product_count': product_count,
+        'supplier': supplier,
+    }
+
+    return render(request, 'store.html', context)

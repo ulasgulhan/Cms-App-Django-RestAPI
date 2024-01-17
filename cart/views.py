@@ -9,15 +9,25 @@ from cms.models import Cart, CartItem, Product, Variations
 def add_cart(request, product_id):
     product = Product.objects.get(id=product_id)
     if request.user.is_authenticated:
+        product_variation = []
+        if request.method == 'POST':
+            for item in request.POST:
+                key = item
+                value = request.POST[key]
+
+                try:
+                    variation = Variations.objects.get(product=product, variation_category__iexact=key, variation_value__iexact=value)
+                    product_variation.append(variation)
+                except:
+                    pass   
+
         cart, created = Cart.objects.get_or_create(user=request.user)
         cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
         if not created:
             cart_item.quantity += 1
             cart_item.save()
     
-        variation_ids = request.POST.getlist('variations', [])
-        variations = Variations.objects.filter(id__in=variation_ids)
-        cart_item.variation.set(variations)
+        cart_item.variation.set(product_variation)
   
         cart.save()
         return redirect('cart')

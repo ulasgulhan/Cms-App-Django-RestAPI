@@ -1,7 +1,7 @@
 <header>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'home' %}">Shop</a>
+            <a class="navbar-brand" href="{% url 'home' %}">Komarite Shop</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
@@ -11,24 +11,22 @@
                         <a class="nav-link active" aria-current="page" href="{% url 'home' %}">Home</a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            Categories
-                        </a>
-                        <ul class="dropdown-menu">
+                        <div class="btn-group">
                             {% for category in links %}
-                                <li>
-                                    <a class="dropdown-item" href="{{category.get_url}}">{{ category.category_name }}</a>
-                                    {% if category.subcategories.all %}
-                                        <ul>
-                                            {% for subcategory in category.subcategories.all %}
-                                                <li><a href="{{subcategory.get_url}}">{{ subcategory.subcategory_name }}</a></li>
-                                            {% endfor %}
-                                        </ul>
-                                    {% endif %}
-                                </li>
+                            <a type="button" class="nav-link " href="{{category.get_url}}">{{ category.category_name }}</a>
+                            <a type="button" class="mt-2 dropdown-toggle dropdown-toggle-split" data-bs-toggle="dropdown" aria-expanded="false" data-bs-reference="parent">
+                              <span class="visually-hidden">Toggle Dropdown</span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                {% for subcategory in category.subcategories.all %}
+                                    <li><a class="dropdown-item" href="{{subcategory.get_url}}">{{ subcategory.subcategory_name }}</a></li>
+                                {% endfor %}
+                            </ul>
                             {% endfor %}
-                        </ul>
+    
+                          </div>
                     </li>
+    
                 </ul>
                 <form action="{% url 'search' %}"class="d-flex" role="search">
                     <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="keyword">
