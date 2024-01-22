@@ -51,6 +51,10 @@
         </div>
         <div class="card-footer">
           <a href="{% url 'create' %}" class="btn btn-md btn-success float-end me-2 ms-2">Create New One</a>
+          {% if user.is_superuser %}
+          <a href="{% url 'permissions' %}" class="btn btn-md btn-warning float-end me-2 ms-2">Permissions</a>
+          {% endif %}
+          <a href="{% url 'profile' %}" class="btn btn-md btn-primary float-end me-2 ms-2">Back to profile</a>
         </div>
       </div>
     </div>

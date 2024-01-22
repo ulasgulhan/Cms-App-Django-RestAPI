@@ -3,6 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from .models import Category, Product, SubCategory
 from .forms import ProductCreateForm, RegisterForm
@@ -162,3 +163,26 @@ def supplier_store(request, user_id):
     }
 
     return render(request, 'store.html', context)
+
+
+def profile(request):
+    return render(request, 'dashboard/profile.html')
+
+
+def permissions(request):
+    users = User.objects.filter(is_active=True).order_by('-username')
+    return render(request, 'dashboard/permissions.html', {'users': users})
+
+
+def permissio_change(request, user_id):
+    login_user = request.user
+    user = get_object_or_404(User, id=user_id)
+    if login_user.is_superuser:
+        if user.is_staff:
+            user.is_staff = False
+        else:
+            user.is_staff = True
+        user.save()
+    else:
+        messages.error(request, 'You are not allowed to change this user.')
+    return redirect('permissions')

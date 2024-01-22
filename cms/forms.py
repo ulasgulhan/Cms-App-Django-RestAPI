@@ -18,7 +18,7 @@ class RegisterForm(UserCreationForm):
 
 
 class ProductCreateForm(forms.ModelForm):
-    category = forms.ModelChoiceField(queryset=SubCategory.objects.all(), empty_label="Select a category", widget=forms.Select(attrs={'class': 'form-control'}))
+    category = forms.ModelChoiceField(queryset=SubCategory.objects.all().order_by('parent_category__category_name'), empty_label="Select a category", widget=forms.Select(attrs={'class': 'form-control'}))
 
     class Meta:
         model = Product
@@ -48,3 +48,4 @@ class ProductCreateForm(forms.ModelForm):
                 raise forms.ValidationError('Meeting cannot contains punctuation!')
 
         return product_name
+
