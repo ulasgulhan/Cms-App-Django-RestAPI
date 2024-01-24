@@ -1,8 +1,8 @@
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.utils.text import slugify
 from rest_framework import serializers
 from cms.models import Category, Product, SubCategory
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import make_password
 
 
 
@@ -30,6 +30,18 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ['first_name', 'last_name', 'username', 'email', 'last_login']
 
 
+class UserPermissionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['first_name', 'last_name', 'username', 'email', 'last_login', 'is_staff']
+
+
+class UserPermissionChangeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['is_staff']
+
+
 class UserRegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(style={'input_type': 'password'}, write_only=True)
     
@@ -50,12 +62,42 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'Error': 'Password must match!'})
 
         user = User.objects.create(
-            first_name=self.validated_data['first_name'],
-            last_name=self.validated_data['last_name'],
-            username=self.validated_data['username'],
-            email=self.validated_data['email'],
-            password=make_password(self.validated_data['password']),
+            first_name = self.validated_data['first_name'],
+            last_name = self.validated_data['last_name'],
+            username = self.validated_data['username'],
+            email = self.validated_data['email'],
+            password = make_password(self.validated_data['password']),
         )
         
         user.save()
         return user
+
+
+class CreateProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['product_name', 'image', 'category', 'description', 'price', 'stock']
+
+    def save(self):
+
+        product = Product.objects.create(
+            product_name = self.validated_data['product_name'],
+            slug = slugify(self.validated_data['product_name']),
+            image = self.validated_data['image'],
+            category = self.validated_data['category'],
+            description = self.validated_data['description'],
+            price = self.validated_data['price'],
+            stock = self.validated_data['stock'],
+            supplier = self.context['request'].user 
+        )
+
+        product.save()
+        return product
+
+
+class UpdateProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['product_name', 'image', 'category', 'description', 'price', 'stock']
+
+        
