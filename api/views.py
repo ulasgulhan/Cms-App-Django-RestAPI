@@ -1,16 +1,17 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
-from rest_framework import serializers, permissions
+from rest_framework import serializers, permissions, status
 from rest_framework.authentication import authenticate
 from rest_framework.decorators import api_view
 from api.serializers import CategorySerializer, CreateProductSerializer, SubCategorySerializer, ProductSerializer, UpdateProductSerializer, UserPermissionChangeSerializer, UserPermissionSerializer, UserRegisterSerializer, UserSerializer
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView, RetrieveUpdateAPIView 
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
-
+from .permissions import IsSuperUser
 from cms.models import Category, Product, SubCategory
 
 # Create your views here.
@@ -18,9 +19,8 @@ from cms.models import Category, Product, SubCategory
 
 # region Product Lists Views
 
-@method_decorator(login_required(login_url='api_login'), name='dispatch')
 class ProductListAPIView(ListAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.filter(Q(status='Active') | Q(status='Modified'))
     serializer_class = ProductSerializer
     permission_classes = (permissions.AllowAny,)
 
@@ -42,7 +42,7 @@ class ProductByCategoryListAPIView(ListAPIView):
         category_slug = self.kwargs['category_slug']
         parent_category = get_object_or_404(Category, slug=category_slug)
         subcategory = SubCategory.objects.filter(parent_category=parent_category)
-        queryset = Product.objects.filter(category__in=subcategory)
+        queryset = Product.objects.filter(Q(category__in=subcategory), Q(status='Active') | Q(status='Modified'))
         return queryset
 
 
@@ -52,7 +52,7 @@ class ProductBySubCategoryListAPIView(ListAPIView):
     def get_queryset(self):
         category_slug = self.kwargs['category_slug']
         subcategory_slug = self.kwargs['subcategory_slug']
-        queryset = Product.objects.filter(category__parent_category__slug=category_slug, category__slug=subcategory_slug)
+        queryset = Product.objects.filter(Q(category__parent_category__slug=category_slug), Q(category__slug=subcategory_slug), Q(status='Active') | Q(status='Modified'))
         return queryset
 
 
@@ -63,10 +63,33 @@ class ProductDetailAPIView(ListAPIView):
         category_slug = self.kwargs['category_slug']
         subcategory_slug = self.kwargs['subcategory_slug']
         product_slug = self.kwargs['product_slug']
-        queryset = Product.objects.filter(category__parent_category__slug=category_slug, category__slug=subcategory_slug, slug=product_slug)
+        queryset = Product.objects.filter(Q(category__parent_category__slug=category_slug), Q(category__slug=subcategory_slug, slug=product_slug), Q(status='Active') | Q(status='Modified'))
         return queryset
 
+
+class ProductSearchAPIView(ListAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+        keyword = self.request.query_params.get('keyword', '')
+        if keyword:
+            return Product.objects.filter(Q(description__icontains=keyword) | Q(product_name__icontains=keyword), Q(status='Active') | Q(status='Modified'))
+        else:
+            return None
+    
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        if not queryset.exists():
+            return Response({'detail': 'Products not found'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data)
+
+
 # endregion
+
+
+
 
 
 # region Profile and Dashboard
@@ -77,7 +100,7 @@ class DashboardAPIView(ListAPIView):
 
     def get_queryset(self):
         if self.request.user.is_staff:
-            queryset = Product.objects.filter(supplier=self.request.user)
+            queryset = Product.objects.filter(Q(supplier=self.request.user), Q(status='Active') | Q(status='Modified'))
             return queryset
         else:
             raise serializers.ValidationError({'Error': 'You must be staff for enter'})
@@ -102,7 +125,8 @@ class ProfileAPIView(ListAPIView):
 class PermissionAPIView(ListAPIView):
     queryset = User.objects.exclude(is_superuser=True)
     serializer_class = UserPermissionSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUser]
+
 
 
 
@@ -111,7 +135,7 @@ class PermissionAPIView(ListAPIView):
 @method_decorator(login_required(login_url='api_login'), name='dispatch')
 class PermissionChangeAPIView(RetrieveUpdateAPIView):
     serializer_class = UserPermissionChangeSerializer
-    permission_classes = [permissions.IsAdminUser]
+    permission_classes = [IsSuperUser]
 
     def get_queryset(self):
         user_id = self.kwargs.get('pk')
@@ -204,23 +228,6 @@ class ProductDeleteAPIView(DestroyAPIView):
         product.status = 'Passive'
         product.save()
         return redirect('product_list')
-
-
-
-
-
-""" @api_view(['GET', 'POST'])
-def update_view(request, product_id):
-    product = get_object_or_404(Product, id=product_id, supplier=request.user)
-    if request.method == 'POST':
-        serializer = UpdateProductSerializer(instance=product, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return redirect('product_list')
-    else:
-        serializer = UpdateProductSerializer(instance=product)
-        return Response(serializer.data)
- """
 
 
 # endregion

@@ -20,6 +20,7 @@ urlpatterns = [
 
     # Product Read Operations
     path('list/', views.ProductListAPIView.as_view(), name='product_list'),
+    path('search/', views.ProductSearchAPIView.as_view(), name='product_search'),
     path('categories/', views.CategoryListAPIView.as_view(), name='category_list'),
     path('subcategories/', views.SubCategoryListAPIView.as_view(), name='subcategory_list'),
     path('<slug:category_slug>/', views.ProductByCategoryListAPIView.as_view(), name='api_product_by_category'),

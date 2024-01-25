@@ -3,7 +3,8 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.http.response import ResponseHeaders
 from django.shortcuts import get_object_or_404, redirect, render
 from .models import Category, Product, SubCategory
 from .forms import ProductCreateForm, RegisterForm
@@ -44,7 +45,7 @@ def store(request, category_slug=None, subcategory_slug=None):
 
 
 def product_details(request, category_slug, subcategory_slug, product_slug):
-    single_product = Product.objects.get(category__slug=subcategory_slug, slug=product_slug)
+    single_product = get_object_or_404(Product, Q(category__slug=subcategory_slug), Q(slug=product_slug), Q(status='Active') | Q(status='Modified'))
     context = {
         'single_product': single_product
     }
@@ -55,7 +56,7 @@ def search(request):
     if 'keyword' in request.GET:
         keyword = request.GET['keyword']
         if keyword:
-            products = Product.objects.filter(Q(description__icontains=keyword) | Q(product_name__icontains=keyword))
+            products = Product.objects.filter(Q(description__icontains=keyword) | Q(product_name__icontains=keyword), Q(status='Active') | Q(status='Modified'))
             product_count = products.count()
         else:
             return redirect('home')
@@ -171,12 +172,16 @@ def profile(request):
 
 def permissions(request):
     users = User.objects.filter(is_active=True).order_by('-username')
-    return render(request, 'dashboard/permissions.html', {'users': users})
+    if request.user.is_superuser:
+        return render(request, 'dashboard/permissions.html', {'users': users})
+    else:
+        return HttpResponse('Unauthorized', status=403)
+
 
 
 def permissio_change(request, user_id):
     login_user = request.user
-    user = get_object_or_404(User, id=user_id)
+    user = get_object_or_404(User, Q(id=user_id), Q(status='Active') | Q(status='Modified'))
     if login_user.is_superuser:
         if user.is_staff:
             user.is_staff = False
