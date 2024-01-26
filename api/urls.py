@@ -14,6 +14,12 @@ urlpatterns = [
     path('profile/dashboard/update/<int:product_id>', views.ProductUpdateAPIView.as_view(), name='api_update'),
     path('profile/dashboard/delete/<pk>', views.ProductDeleteAPIView.as_view(), name='api_delete'),
 
+    # Cart Process
+    path('add_cart/<int:product_id>/', views.AddToCartView.as_view(), name='api_add_cart'),
+    path('cart/', views.CartView.as_view(), name='api_cart'),
+    path('remove_cart/<int:product_id>/', views.RemoveFromCartView.as_view(), name='api_remove_cart'),
+    path('discard_cart_item/<int:product_id>/', views.DiscardCartItemView.as_view(), name='api_discard_cart_item'),
+
     # User Permisson
     path('profile/dashboard/permisson', views.PermissionAPIView.as_view(), name='api_permisson'),
     path('profile/dashboard/permisson/<pk>', views.PermissionChangeAPIView.as_view(), name='api_permisson_change'),

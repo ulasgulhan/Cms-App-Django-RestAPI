@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 from rest_framework import serializers
-from cms.models import Category, Product, SubCategory
+from cms.models import CartItem, Category, Product, SubCategory, Variations
 from django.contrib.auth.hashers import make_password
 
 
@@ -100,4 +100,21 @@ class UpdateProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = ['product_name', 'image', 'category', 'description', 'price', 'stock']
 
-        
+
+class VariationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Variations
+        fields = '__all__'
+
+class CartItemSerializer(serializers.ModelSerializer):
+    variation = VariationsSerializer(many=True)
+
+    class Meta:
+        model = CartItem
+        fields = '__all__'
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = '__all__'
+

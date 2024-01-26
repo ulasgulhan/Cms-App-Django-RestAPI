@@ -7,12 +7,12 @@ from django.utils.decorators import method_decorator
 from rest_framework import serializers, permissions, status
 from rest_framework.authentication import authenticate
 from rest_framework.decorators import api_view
-from api.serializers import CategorySerializer, CreateProductSerializer, SubCategorySerializer, ProductSerializer, UpdateProductSerializer, UserPermissionChangeSerializer, UserPermissionSerializer, UserRegisterSerializer, UserSerializer
+from api.serializers import CartItemSerializer, CategorySerializer, CreateProductSerializer, SubCategorySerializer, ProductSerializer, UpdateProductSerializer, UserPermissionChangeSerializer, UserPermissionSerializer, UserRegisterSerializer, UserSerializer
 from rest_framework.generics import CreateAPIView, DestroyAPIView, ListAPIView, RetrieveUpdateAPIView 
 from rest_framework.response import Response
 from django.views.decorators.csrf import csrf_exempt
 from .permissions import IsSuperUser
-from cms.models import Category, Product, SubCategory
+from cms.models import Cart, CartItem, Category, Product, SubCategory, Variations
 
 # Create your views here.
 
@@ -89,9 +89,6 @@ class ProductSearchAPIView(ListAPIView):
 # endregion
 
 
-
-
-
 # region Profile and Dashboard
 
 @method_decorator(login_required(login_url='api_login'), name='dispatch')
@@ -130,8 +127,6 @@ class PermissionAPIView(ListAPIView):
 
 
 
-
-
 @method_decorator(login_required(login_url='api_login'), name='dispatch')
 class PermissionChangeAPIView(RetrieveUpdateAPIView):
     serializer_class = UserPermissionChangeSerializer
@@ -160,7 +155,7 @@ class PermissionChangeAPIView(RetrieveUpdateAPIView):
 # endregion
 
 
-# region Create, Update, Delete
+# region Product; Create, Update, Delete
 
 @method_decorator(login_required(login_url='api_login'), name='dispatch')
 class ProductCreateAPIView(CreateAPIView):
@@ -199,7 +194,7 @@ class ProductUpdateAPIView(RetrieveUpdateAPIView):
         serializer = self.get_serializer(instance=product, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-        return redirect('product_list')
+        return Response(serializer.data)
     
 
 @method_decorator(login_required(login_url='api_login'), name='dispatch')
@@ -232,6 +227,81 @@ class ProductDeleteAPIView(DestroyAPIView):
 
 # endregion
 
+
+# region Cart, Cart Item CRUD Operations
+
+class AddToCartView(CreateAPIView):
+    serializer_class = CartItemSerializer
+
+    def perform_create(self, serializer):
+        product_id = self.kwargs.get('product_id')
+        product = get_object_or_404(Product, id=product_id)
+        user = self.request.user
+
+        cart, created = Cart.objects.get_or_create(user=user)
+        cart_item, created = CartItem.objects.get_or_create(cart=cart, product=product)
+
+        if not created:
+            cart_item.quantity += 1
+            cart_item.save()
+
+        cart_item.save()
+
+    def post(self, request, *args, **kwargs):
+        self.perform_create(request.data)
+        return Response({'detail': 'Product added to cart successfully'}, status=status.HTTP_201_CREATED)
+
+
+class CartView(ListAPIView):
+    serializer_class = CartItemSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return CartItem.objects.filter(cart__user=user)
+
+
+class RemoveFromCartView(DestroyAPIView):
+    serializer_class = CartItemSerializer
+
+    def perform_destroy(self, instance):
+        if instance.quantity > 1:
+            instance.quantity -= 1
+            instance.save()
+        else:
+            instance.delete()
+
+    def delete(self, request, *args, **kwargs):
+        product_id = kwargs.get('product_id')
+        product = get_object_or_404(Product, id=product_id)
+        user = self.request.user
+
+        try:
+            cart_item = CartItem.objects.get(cart__user=user, product=product)
+            self.perform_destroy(cart_item)
+        except CartItem.DoesNotExist:
+            pass
+
+        return Response({'detail': 'Product removed from cart successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+
+class DiscardCartItemView(DestroyAPIView):
+    serializer_class = CartItemSerializer
+
+    def delete(self, request, *args, **kwargs):
+        product_id = kwargs.get('product_id')
+        product = get_object_or_404(Product, id=product_id)
+        user = self.request.user
+
+        try:
+            cart_item = CartItem.objects.get(cart__user=user, product=product)
+            cart_item.delete()
+        except CartItem.DoesNotExist:
+            pass
+
+        return Response({'detail': 'Cart item discarded successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+
+# endregion
 
 # region Authentication
 
