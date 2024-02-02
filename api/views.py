@@ -1,6 +1,7 @@
 from django.contrib.auth import login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.db import connection
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.decorators import method_decorator
@@ -64,7 +65,23 @@ class ProductDetailAPIView(ListAPIView):
         subcategory_slug = self.kwargs['subcategory_slug']
         product_slug = self.kwargs['product_slug']
         queryset = Product.objects.filter(Q(category__parent_category__slug=category_slug), Q(category__slug=subcategory_slug, slug=product_slug), Q(status='Active') | Q(status='Modified'))
+
+
         return queryset
+    
+    def get(self, *args, **kwargs):
+        product = self.get_queryset().first()
+        query = f"""
+            select user_id, text from comments
+            where product_id = {product.id}
+        """
+        with connection.cursor() as cursor:
+            cursor.execute(query)
+            comments = cursor.fetchall()
+        return Response({
+            'Product': self.serializer_class(product).data,
+            'Comments': comments,
+        })
 
 
 class ProductSearchAPIView(ListAPIView):
@@ -302,6 +319,7 @@ class DiscardCartItemView(DestroyAPIView):
 
 
 # endregion
+
 
 # region Authentication
 

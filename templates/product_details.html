@@ -57,5 +57,11 @@
     <button type="submit" class="btn btn-primary"> <span class="text">Add to Cart</span> <i class="fas fa-shopping-cart"></i></button>
     {% endif %}
     </article> <!-- product-info-aside .// -->
+    <h6>Comments</h6>
+    <hr>
+    {% for comment in comments %}
+      <p>{{ comment }}</p>
+      <hr>
+    {% endfor %}
 </form>
 {% endblock  %}

@@ -12,6 +12,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from unidecode import unidecode
 from django.core.paginator import Paginator
+from django.db import connection
 
 
 # Create your views here.
@@ -46,8 +47,17 @@ def store(request, category_slug=None, subcategory_slug=None):
 
 def product_details(request, category_slug, subcategory_slug, product_slug):
     single_product = get_object_or_404(Product, Q(category__slug=subcategory_slug), Q(slug=product_slug), Q(status='Active') | Q(status='Modified'))
+    query = f"""
+            select user_id, text from comments
+            where product_id = {single_product.id}
+        """
+    with connection.cursor() as cursor:
+        cursor.execute(query)
+        comments = cursor.fetchall()
+
     context = {
-        'single_product': single_product
+        'single_product': single_product,
+        'comments': comments
     }
     return render(request, 'product_details.html', context)
 
